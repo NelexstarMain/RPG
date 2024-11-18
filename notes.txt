@@ -1,0 +1,6 @@
+Pygame: Do tworzenia grafiki 2D i obsługi wejść.
+NumPy: Do operacji na tablicach liczbowych (np. generowanie map).
+NetworkX: Do tworzenia i analizy grafów (np. mapy).
+Random: Do generowania liczb losowych.
+TextBlob: Do przetwarzania języka naturalnego (np. generowanie dialogów).
+
