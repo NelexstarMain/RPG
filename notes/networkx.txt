@@ -1,0 +1,47 @@
+Podstawowe zastosowanie:
+Każda postać (NPC) to węzeł w grafie
+Relacje między postaciami to krawędzie
+Wagi krawędzi mogą reprezentować siłę relacji (przyjaźń, wrogość)
+Przykładowe zastosowania:
+import networkx as nx
+
+# Tworzenie grafu społeczności
+social_network = nx.Graph()
+
+# Dodawanie postaci
+social_network.add_node("Bob", occupation="farmer", home="village_1")
+social_network.add_node("Alice", occupation="merchant", home="village_2")
+
+# Dodawanie relacji
+social_network.add_edge("Bob", "Alice", relationship="friends", strength=0.8)
+Copy
+Insert
+
+Przydatne funkcje:
+nx.shortest_path() - znajdowanie najkrótszej ścieżki między postaciami (np. łańcuch znajomości)
+nx.degree_centrality() - sprawdzanie, które postacie są najbardziej "społeczne"
+nx.clustering() - analiza grup społecznych
+Praktyczne zastosowania w grze:
+Plotki i przepływ informacji między postaciami
+Formowanie się grup i klanów
+Rozprzestrzenianie się wpływów
+Handel i wymiana zasobów
+Konflikty i sojusze
+Dynamiczne zmiany:
+# Zmiana siły relacji w czasie
+def update_relationship(graph, char1, char2, event_impact):
+    current_strength = graph[char1][char2]['strength']
+    new_strength = max(min(current_strength + event_impact, 1.0), -1.0)
+    graph[char1][char2]['strength'] = new_strength
+Copy
+Insert
+
+Analiza społeczności:
+Identyfikacja liderów społeczności
+Wykrywanie izolowanych postaci
+Analiza grup i podgrup
+Zachowania emergentne:
+Naturalne formowanie się społeczności
+Rozwój hierarchii społecznych
+Dynamiczne zmiany w relacjach
+NetworkX pozwala na tworzenie złożonych systemów społecznych, gdzie postacie mogą wchodzić w interakcje, tworzyć związki i wpływać na siebie nawzajem w organiczny sposób.

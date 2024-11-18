@@ -9,23 +9,58 @@ from typing import Dict, List, Union, Tuple
 
 
 class Environment:
-    """
-    Environment class for generating infinite, seamless terrain and biomes.
-    
-    Uses continuous noise functions to create terrain that seamlessly connects
-    between chunks, allowing for dynamic world generation during gameplay.
-    """
 
-    def __init__(self, seed: int = None) -> None:
+    """
+    Environment - A class for procedural terrain generation with seamless chunk connections.
+
+    This class handles the generation of terrain using noise functions to create
+    height maps and biome distributions. It implements chunk-based world generation
+    with caching and seamless connections between adjacent chunks.
+
+    Attributes:
+        seed (int): Random seed for terrain generation
+        chunk_cache (dict): Cache storing generated chunks
+        CHUNK_SIZE (int): Size of each chunk (default: 16)
+
+    Methods:
+        get_chunk(chunk_x, chunk_y): Retrieves or generates a chunk at given coordinates
+        get_surrounding_chunks(center_x, center_y, radius): Gets coordinates of nearby chunks
+        _generate_chunk(chunk_x, chunk_y): Internal method for chunk generation
+        _generate_noise(x, y, scale, octaves): Generates continuous noise values
+        _get_biome_for_height(height): Determines biome type based on height
+
+    Examples:
+        >>> env = Environment(seed=12345)
+        >>> chunk = env.get_chunk(0, 0)
+        >>> print(chunk['height_map'].shape)  # (16, 16)
+        >>> print(len(chunk['biome_map']))    # 16
+
+        # Get surrounding chunks
+        >>> surrounding = env.get_surrounding_chunks(0, 0, radius=1)
+        >>> print(len(surrounding))  # 9 chunks (3x3 area)
+
+    Parameters:
+        seed (int | None, optional): Seed for random generation. Defaults to None.
+
+    Note:
+        The terrain generation uses trigonometric functions with phase shifts to ensure
+        smooth transitions between chunks. The biome distribution is determined by
+        height thresholds, creating distinct terrain types.
+
+    The chunk data structure contains:
+        - height_map: numpy.ndarray of terrain heights
+        - biome_map: List[List[str]] of biome types
+    """
+    def __init__(self, seed: int|None = None) -> None:
         """
         Initialize the Environment with optional seed.
 
         Args:
             seed (int, optional): Seed for terrain generation. If None, random seed is used.
         """
-        self.seed = seed if seed is not None else np.random.randint(0, 1000000)
-        self.chunk_cache = {}  # Cache dla wygenerowanych chunków
-        self.CHUNK_SIZE = 16
+        self.seed: int = seed if seed is not None else np.random.randint(0, 1000000)
+        self.chunk_cache: dict = {}  # Cache dla wygenerowanych chunków
+        self.CHUNK_SIZE: int = 16
 
     def _generate_noise(self, x: float, y: float, scale: float = 50.0, octaves: int = 4) -> float:
         """

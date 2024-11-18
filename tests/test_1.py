@@ -59,7 +59,7 @@ class MapVisualizer:
         chunk_size = 16
         for chunk_y in range(self.height // chunk_size):
             for chunk_x in range(self.width // chunk_size):
-                chunk = environment.generate_chunk(chunk_x, chunk_y)
+                chunk = environment._generate_chunk(chunk_x, chunk_y)
                 self._draw_chunk(chunk, chunk_x * chunk_size, chunk_y * chunk_size)
 
         pygame.display.flip()
@@ -144,7 +144,7 @@ def main() -> None:
     TILE_SIZE = 1
     
     try:
-        environment = Environment(WIDTH, HEIGHT)
+        environment = Environment()
         visualizer = MapVisualizer(WIDTH, HEIGHT, TILE_SIZE)
         visualizer.draw_map(environment)
         visualizer.run()
