@@ -103,7 +103,3 @@ class WorldGenerator:
 
     
     
-# if __name__=="__main__":
-#     world_generator = WorldGenerator()
-#     world_generator.generate_chunk(0, 0)
-#     chunk_info = world_generator.get_chunk_info(0, 0)
