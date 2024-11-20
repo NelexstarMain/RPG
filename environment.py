@@ -130,19 +130,24 @@ class Environment:
         biome_map = [['' for _ in range(self.CHUNK_SIZE)] for _ in range(self.CHUNK_SIZE)]
         height_map = np.zeros((self.CHUNK_SIZE, self.CHUNK_SIZE))
         
-        # Generuj wysokości z nakładką dla płynnych przejść
-        overlap = 1  # Wielkość nakładki dla płynnych przejść
+        overlap = 1
         
         for y in range(-overlap, self.CHUNK_SIZE + overlap):
             for x in range(-overlap, self.CHUNK_SIZE + overlap):
                 world_x = chunk_x * self.CHUNK_SIZE + x
                 world_y = chunk_y * self.CHUNK_SIZE + y
                 
-                # Generuj bazową wysokość
-                height = self._generate_noise(world_x, world_y, scale=25.0)
-                # Dodaj detale
-                detail = self._generate_noise(world_x, world_y, scale=10.0, octaves=2)
-                height = height * 0.8 + detail * 0.2
+                # Generuj bazową wysokość z większą skalą dla większych formacji
+                base_height = self._generate_noise(world_x, world_y, scale=50.0, octaves=4)
+                # Dodaj średnie detale
+                medium_detail = self._generate_noise(world_x, world_y, scale=25.0, octaves=2)
+                # Dodaj drobne detale
+                fine_detail = self._generate_noise(world_x, world_y, scale=10.0, octaves=1)
+                
+                # Połącz wszystkie warstwy z różnymi wagami
+                height = (base_height * 0.6 + 
+                        medium_detail * 0.3 + 
+                        fine_detail * 0.1)
                 
                 # Zapisz tylko dane dla właściwego chunka
                 if 0 <= x < self.CHUNK_SIZE and 0 <= y < self.CHUNK_SIZE:
@@ -179,11 +184,21 @@ class Environment:
         Returns:
             str: Biome type identifier.
         """
-        if height < 0.3:
-            return "plains"
+        if height < 0.2:
+            return "OCEAN"
+        elif height < 0.3:
+            return "BEACH"
+        elif height < 0.4:
+            return "PLAINS"
         elif height < 0.5:
-            return "desert"
+            return "FOREST"
+        elif height < 0.6:
+            return "JUNGLE"
         elif height < 0.7:
-            return "forest"
+            return "DESERT"
+        elif height < 0.8:
+            return "SWAMP"
+        elif height < 0.9:
+            return "TUNDRA"
         else:
-            return "mountains"
+            return "MOUNTAINS"
