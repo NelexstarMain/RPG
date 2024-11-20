@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 import uuid
 from data.plan.system import MedievalTaskManager
 from data.job import JOB_TO_HOUR
+import random
 
 
 """
@@ -30,6 +31,8 @@ class HumanBody:
     inventory: List = field(default_factory=list)
     alive: bool = True
 
+    def distance(self, x: int, y: int) -> int:
+        return abs(x - self.x) + abs(y - self.y)
 
 
 @dataclass
@@ -73,7 +76,7 @@ class Human:
     patience: float = 0.0      
     honesty: float = 0.0        
     adaptability: float = 0.0
-    memory: List = field(default_factory=list)
+    memory: dict = field(default_factory=dict)
     future_plans: List = field(default_factory=list)
     plan: str = ""
     
@@ -104,13 +107,95 @@ class Human:
         
         
     
-class HumanMenager:
-    def __init__(self):
-        self.body: HumanBody = HumanBody()
-        self.mind: Human = Human()
+# class HumanMenager:
+#     def __init__(self):
+#         self.body: HumanBody = HumanBody()
+#         self.mind: Human = Human()
         
-    def actions(self) -> Optional[Tuple[int, int, Optional[bool]]]
+class Actions: 
+    """
+    Medieval Task Management System Data
+    ==================================
+
+    This module contains core data structures for medieval professions, tasks, items and rewards.
+
+    Professions & Tasks
+    ------------------
+    common_tasks:
+        - Morning/Evening prayer (1h): needs prayer book -> blessing, morale
+        - Prepare meals (2h): needs pot, food, wood -> meal, energy
+        - Clean workspace (1h): needs broom, cloth -> clean space
+
+    warrior:
+        - Training, maintenance, guard duty, patrol (2-6h)
+        - Needs: sword, armor, cloth, oil, brush, food
+        - Gives: combat skill, strength, coins, experience
+
+    blacksmith:
+        - Forge work, repairs, crafting (1-8h) 
+        - Needs: wood, tools, metal, leather
+        - Gives: weapons, armor, coins, repairs
+
+    healer:
+        - Gathering herbs, making medicine, treating patients (2-5h)
+        - Needs: herbs, tools, potions, cloth, book
+        - Gives: knowledge, coins, experience, healing items
+
+    merchant:
+        - Trading, negotiating, traveling (1-12h)
+        - Needs: goods, coins, horse, book
+        - Gives: coins, new goods, better prices
+
+    Basic Items
+    ----------
+    Combat: sword, armor
+    Tools: tools, knife, broom, brush
+    Materials: cloth, wood, metal, leather
+    Trade: goods, coins
+    Medical: herbs, potions
+    Other: book, horse, pot, basket, oil, food
+
+    Possible Rewards
+    --------------
+    Resources: coins, new goods, herbs, potions
+    Skills: knowledge, experience, combat skill
+    Status: blessing, morale, better prices
+    Items: weapons, armor, tools, bandages
+    Effects: clean space, maintained equipment, healthy horse
+
+    Time Requirements
+    ---------------
+    Short tasks: 1-3 hours
+    Medium tasks: 4-6 hours
+    Long tasks: 8-12 hours
+
+    Notes
+    -----
+    - Common tasks are available to all professions
+    - Each profession has 4-6 specific tasks
+    - Tasks require specific items and give specific rewards
+    - Time requirements vary by task complexity
+    """
+    def __init__(self, body, mind) -> None:
+        self.body: HumanBody = body
+        self.mind: Human = mind
         self.mind.plan_menagment()
-        action = self.mind.plan
-        
+        self.action = self.mind.plan
+
+
+
+
+    def prayer(self) -> Optional[Tuple[int, int, Optional[Union[List, bool]]]]:
+        if "praing book" not in self.body.inventory:
+            return None
+        if "praying" not in self.mind.memory:
+            x, y = self.body.x, self.body.y
+            radius = (random.randint(-50, 50), random.randint(-50, 50))
+            self.mind.memory["praying"] = (x + radius[0], y + radius[1])
+            pass
     
+        x, y = self.mind.memory["praying"]
+        if self.body.distance(x, y) > 100:
+            return None
+        else:
+            return (x, y, True)
