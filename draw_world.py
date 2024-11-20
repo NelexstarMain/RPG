@@ -112,7 +112,7 @@ class GameConfig:
     HEIGHT_OF_OFFSET: int = 15
     CHUNK_SIZE: int = 16
     GENERATION_RADIUS: int = 1
-    MOVE_SPEED: int = 50
+    MOVE_SPEED: int = 25
     TARGET_FPS: int = 60
     RENDER_DISTANCE: int = 2  # Liczba chunków widocznych w każdym kierunku
     
@@ -210,22 +210,26 @@ class WorldRenderer:
         self.environment = Environment(config.CHUNK_SIZE)
         self.character = Character(100, 100, {"ATT": 10})
         self.world = WorldGenerator(config.CHUNK_SIZE)
-        self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
-        self.performance = PerformanceMonitor()
         
-        # Używamy słownika zamiast listy dla szybszego dostępu
+        # Initialize pygame display in fullscreen mode
+        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        
+        # Get the actual screen dimensions
+        screen_info = pygame.display.Info()
+        self.config.SCREEN_WIDTH = screen_info.current_w
+        self.config.SCREEN_HEIGHT = screen_info.current_h
+        
+        self.performance = PerformanceMonitor()
         self.chunks: Dict[Tuple[int, int], Dict] = {}
         
         self.offset_x = 0
         self.offset_y = 0
         
-        # Bufor renderowania
-        self.render_buffer = pygame.Surface((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+        # Update render buffer size to match fullscreen dimensions
+        self.render_buffer = pygame.Surface((self.config.SCREEN_WIDTH, self.config.SCREEN_HEIGHT))
         
         self.load_assets()
         self.initialize_world()
-        
-        # Predefiniowane kolory i powierzchnie
         self._prepare_cached_surfaces()
 
     def _prepare_cached_surfaces(self):
@@ -246,7 +250,7 @@ class WorldRenderer:
         }
         
         self.biome_colors = {
-            'OCEAN': (64, 164, 223),
+            'OCEAN': (25, 75, 210),
             'BEACH': (238, 214, 175),
             'FOREST': (34, 180, 34),
             'JUNGLE': (80, 200, 80),

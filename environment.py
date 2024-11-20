@@ -62,38 +62,30 @@ class Environment:
         self.chunk_cache: dict = {}  # Cache dla wygenerowanych chunków
         self.CHUNK_SIZE: int = 16
 
+    
     def _generate_noise(self, x: float, y: float, scale: float = 50.0, octaves: int = 4) -> float:
-        """
-        Generate continuous noise value that seamlessly connects between chunks.
-        
-        Args:
-            x (float): Global X coordinate.
-            y (float): Global Y coordinate.
-            scale (float): Base scale of the noise.
-            octaves (int): Number of noise layers to combine.
-        """
         try:
             x = x / scale
             y = y / scale
             
-            noise = 0.0
+            noise = 0  # Zmienione z 10 na 0 dla lepszej kontroli nad wysokością
             amplitude = 1.0
             frequency = 1.0
-            max_value = 0.0
+            max_value = 0
             
-            # Używamy stałych przesunięć fazowych dla spójności między chunkami
+            # Zwiększamy liczbę oktaw dla bardziej szczegółowego terenu
             for i in range(octaves):
-                # Używamy globalnych współrzędnych dla ciągłości
-                phase_x = self.seed * (i + 1) * 1.5
-                phase_y = self.seed * (i + 1) * 2.7
+                phase_x = self.seed * (i + 1) * 2.5  # Zwiększone przesunięcie fazowe
+                phase_y = self.seed * (i + 1) * 3.7
                 
-                # Funkcje trygonometryczne ze stałymi fazami
+                # Dodajemy więcej funkcji trygonometrycznych dla bardziej złożonego terenu
                 noise += amplitude * np.sin(x * frequency + phase_x)
                 noise += amplitude * np.cos(y * frequency + phase_y)
+                noise += amplitude * np.sin((x + y) * frequency * 0.5)
                 
-                max_value += amplitude * 2
+                max_value += amplitude * 3  # Dostosowane do trzech funkcji
                 amplitude *= 0.5
-                frequency *= 2.0
+                frequency *= 2.2  # Zwiększone dla bardziej dramatycznych zmian
             
             noise = (noise / max_value + 1) / 2
             return np.clip(noise, 0, 1)
@@ -123,10 +115,8 @@ class Environment:
         self.chunk_cache[chunk_key] = chunk_data
         return chunk_data
 
+    
     def _generate_chunk(self, chunk_x: int, chunk_y: int) -> Dict[str, Union[List[List[str]], np.ndarray]]:
-        """
-        Generate a new chunk with seamless connections to neighbors.
-        """
         biome_map = [['' for _ in range(self.CHUNK_SIZE)] for _ in range(self.CHUNK_SIZE)]
         height_map = np.zeros((self.CHUNK_SIZE, self.CHUNK_SIZE))
         
@@ -137,17 +127,22 @@ class Environment:
                 world_x = chunk_x * self.CHUNK_SIZE + x
                 world_y = chunk_y * self.CHUNK_SIZE + y
                 
-                # Generuj bazową wysokość z większą skalą dla większych formacji
-                base_height = self._generate_noise(world_x, world_y, scale=50.0, octaves=4)
-                # Dodaj średnie detale
-                medium_detail = self._generate_noise(world_x, world_y, scale=25.0, octaves=2)
-                # Dodaj drobne detale
-                fine_detail = self._generate_noise(world_x, world_y, scale=10.0, octaves=1)
+                # Generowanie różnych warstw terenu
+                base_height = self._generate_noise(world_x, world_y, scale=100.0, octaves=6)
+                medium_detail = self._generate_noise(world_x, world_y, scale=50.0, octaves=4)
+                fine_detail = self._generate_noise(world_x, world_y, scale=25.0, octaves=2)
+                water_mask = self._generate_noise(world_x, world_y, scale=200.0, octaves=2)
                 
-                # Połącz wszystkie warstwy z różnymi wagami
-                height = (base_height * 0.6 + 
-                        medium_detail * 0.3 + 
-                        fine_detail * 0.1)
+                # Łączenie warstw z różnymi wagami
+                height = (
+                    base_height * 0.5 +
+                    medium_detail * 0.3 +
+                    fine_detail * 0.2
+                )
+                
+                # Dodanie większej ilości wody
+                if water_mask < 0.4:  # Zwiększona szansa na wodę
+                    height *= 0.3  # Obniżenie terenu dla wody
                 
                 # Zapisz tylko dane dla właściwego chunka
                 if 0 <= x < self.CHUNK_SIZE and 0 <= y < self.CHUNK_SIZE:
@@ -176,23 +171,17 @@ class Environment:
 
     def _get_biome_for_height(self, height: float) -> str:
         """
-        Determine biome type based on terrain height.
-
-        Args:
-            height (float): Terrain height value between 0 and 1.
-
-        Returns:
-            str: Biome type identifier.
+        Zmodyfikowane progi wysokości dla lepszego rozkładu biomów
         """
-        if height < 0.2:
+        if height < 0.1:  # Zwiększony próg dla wody
             return "OCEAN"
         elif height < 0.3:
             return "BEACH"
-        elif height < 0.4:
+        elif height < 0.45:
             return "PLAINS"
-        elif height < 0.5:
+        elif height < 0.55:
             return "FOREST"
-        elif height < 0.6:
+        elif height < 0.65:
             return "JUNGLE"
         elif height < 0.7:
             return "DESERT"

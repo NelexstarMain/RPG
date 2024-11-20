@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, List
 class Character:
     """
     A class representing a character in an RPG game.
@@ -60,6 +60,7 @@ class Character:
         
         self.x: int = x
         self.y: int = y
+        self.z: int = 0
         
         self.health: int = 100
         self.status: dict[str, int] = status
@@ -153,4 +154,56 @@ class Character:
             self.exp -= max_level
             self.lvl += 1
 
-    
+    def move(self, new_x: int, new_y: int, map: List[List[int]]) -> bool:
+        """
+        Move character to new position if possible.
+        Returns True if movement was successful, False otherwise.
+        """
+        if not self._possible_moves(map, new_x, new_y):
+            return False
+            
+        self.x = new_x
+        self.y = new_y
+        self.z = map[new_x][new_y]
+        return True
+
+    def jump(self, new_x: int, new_y: int, map: List[List[int]]) -> bool:
+        """
+        Attempt to jump to a higher position.
+        Returns True if jump was successful, False otherwise.
+        """
+        target_height = map[new_x][new_y]
+        current_height = map[self.x][self.y]
+        
+        # Can jump up to 2 blocks high
+        if target_height - current_height > 2:
+            return False
+            
+        self.x = new_x
+        self.y = new_y
+        self.z = target_height
+        return True
+
+    def _possible_moves(self, map: List[List[int]], new_x: int, new_y: int) -> bool:
+        """
+        Check if movement to new position is possible.
+        """
+        # Check chunk boundaries
+        if not (0 <= new_x < len(map) and 0 <= new_y < len(map[0])):
+            return False
+        
+        # Ensure coordinates are within chunk bounds
+        x = self.x % len(map)
+        y = self.y % len(map[0])
+        
+        current_height = map[y][x]  # Note: y and x are swapped for array access
+        target_height = map[new_y][new_x]  # Note: new_y and new_x are swapped for array access
+        
+        # Can only walk on same height or one block down
+        height_diff = target_height - current_height
+        if height_diff > 0:
+            return False
+        if height_diff < -1:
+            return False
+            
+        return True
