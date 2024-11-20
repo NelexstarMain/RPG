@@ -1,17 +1,110 @@
+"""
+Game World Rendering and Management System
+
+This module implements the core rendering and world management system for a 2D terrain-based game.
+It provides classes for handling game configuration, performance monitoring, and world rendering.
+
+Key Components:
+    GameConfig: Dataclass storing game configuration parameters
+    PerformanceMonitor: Tracks and analyzes game performance metrics
+    WorldRenderer: Main class handling world generation and rendering
+
+Technical Details:
+    - Uses pygame for rendering
+    - Implements chunk-based world generation
+    - Supports dynamic loading/unloading of chunks
+    - Features performance monitoring and optimization
+    - Includes debug visualization options
+
+Dependencies:
+    - pygame: Graphics and window management
+    - numpy: Array operations for terrain generation
+    - character: Custom Character class implementation
+    - environment: Environment generation system
+    - world_generator: Chunk generation system
+
+Example Usage:
+    Basic game setup:
+    >>> from game_renderer import GameConfig, WorldRenderer
+    >>> config = GameConfig(SCREEN_WIDTH=1024, SCREEN_HEIGHT=768)
+    >>> renderer = WorldRenderer(config)
+    
+    Main game loop:
+    >>> import pygame
+    >>> running = True
+    >>> clock = pygame.time.Clock()
+    >>> while running:
+    ...     for event in pygame.event.get():
+    ...         if event.type == pygame.QUIT:
+    ...             running = False
+    ...     renderer.update()
+    ...     clock.tick(config.TARGET_FPS)
+
+Performance Considerations:
+    - Uses surface caching for improved rendering speed
+    - Implements chunk visibility checking
+    - Dynamic chunk loading based on view distance
+    - Optimized terrain generation with buffering
+
+World Generation Features:
+    - Procedural terrain generation
+    - Multiple biome types
+    - Height-based terrain rendering
+    - Smooth chunk transitions
+
+Controls:
+    - Arrow keys: Move camera
+    - ESC: Exit game
+
+Notes:
+    - Chunk size and render distance can be configured in GameConfig
+    - Performance metrics are available through PerformanceMonitor
+    - Debug information can be toggled in WorldRenderer
+"""
+
+
+
 import pygame
 import math
 import time
-from typing import Any, List, Tuple, Optional, Union, Dict
+from typing import  Tuple, Dict
 from dataclasses import dataclass
 from character import Character
 from environment import Environment
 from world_generator import WorldGenerator
 from collections import deque
-import numpy as np
+
 
 
 @dataclass
 class GameConfig:
+    """
+    Configuration settings for the game.
+    
+    Attributes:
+        SCREEN_WIDTH (int): Width of game window in pixels
+        SCREEN_HEIGHT (int): Height of game window in pixels 
+        BLOCK_SIZE (int): Size of a single terrain block in pixels
+        VERTICAL_OFFSET (int): Vertical offset for terrain rendering
+        HEIGHT_OF_OFFSET (int): Height multiplier for terrain elevation
+        CHUNK_SIZE (int): Size of world chunks (e.g. 16x16 blocks)
+        GENERATION_RADIUS (int): Radius of chunks to generate around player
+        MOVE_SPEED (int): Player movement speed
+        TARGET_FPS (int): Target frames per second
+        RENDER_DISTANCE (int): Number of chunks visible in each direction
+        
+    Example:
+        >>> config = GameConfig()
+        >>> print(config.SCREEN_WIDTH)  # 800
+        >>> print(config.CHUNK_SIZE)    # 16
+        
+        # Custom config
+        >>> custom_config = GameConfig(
+        ...     SCREEN_WIDTH=1024,
+        ...     SCREEN_HEIGHT=768,
+        ...     RENDER_DISTANCE=3
+        ... )
+        """
     SCREEN_WIDTH: int = 800
     SCREEN_HEIGHT: int = 600
     BLOCK_SIZE: int = 50
@@ -27,9 +120,38 @@ class GameConfig:
 
 
 class PerformanceMonitor:
+    """
+    Monitors and tracks game performance metrics.
+    
+    Tracks frame times and chunk generation times to calculate FPS
+    and generation performance.
+    
+    Attributes:
+        frame_times (deque[float]): Recent frame render times
+        generation_times (deque[float]): Recent chunk generation times
+        last_time (float): Timestamp of last frame
+        
+    Methods:
+        update_frame_time(): Records time taken for current frame
+        get_fps(): Calculates current FPS
+        log_generation_time(): Records chunk generation time
+        get_avg_generation_time(): Calculates average generation time
+        
+    Example:
+        >>> monitor = PerformanceMonitor(max_samples=60)
+        >>> monitor.update_frame_time()
+        >>> current_fps = monitor.get_fps()
+        >>> print(f"FPS: {current_fps:.1f}")
+        
+        # Track chunk generation
+        >>> start = time.time()
+        >>> # ... generate chunk ...
+        >>> monitor.log_generation_time(time.time() - start)
+        >>> avg_time = monitor.get_avg_generation_time()
+        """
     def __init__(self, max_samples: int = 60):
-        self.frame_times = deque(maxlen=max_samples)
-        self.generation_times = deque(maxlen=max_samples)
+        self.frame_times: deque[float] = deque(maxlen=max_samples)
+        self.generation_times: deque[float] = deque(maxlen=max_samples)
         self.last_time = time.time()
         
     def update_frame_time(self) -> None:
@@ -47,6 +169,42 @@ class PerformanceMonitor:
         return sum(self.generation_times) / (len(self.generation_times) or 1)
 
 class WorldRenderer:
+    """
+    Handles rendering of the game world and manages game state.
+    
+    Manages world chunks, rendering, asset loading and game loop.
+    Provides methods for world interaction and visualization.
+    
+    Attributes:
+        config (GameConfig): Game configuration settings
+        environment (Environment): Environment generation system
+        character (Character): Player character instance
+        world (WorldGenerator): World chunk generator
+        screen (Surface): Pygame display surface
+        performance (PerformanceMonitor): Performance tracking
+        chunks (Dict): Currently loaded world chunks
+        
+    Methods:
+        update(): Updates game state and renders frame
+        move(dx, dy): Moves view by given offset
+        render_world(): Renders visible world chunks
+        
+    Example:
+        >>> config = GameConfig()
+        >>> renderer = WorldRenderer(config)
+        
+        # Game loop
+        >>> running = True
+        >>> while running:
+        ...     # Handle input
+        ...     renderer.move(-50, 0)  # Move left
+        ...     renderer.update()
+        ...     pygame.display.flip()
+        
+        # Access world data
+        >>> chunk = renderer.chunks[(0,0)]
+        >>> height = chunk['data']['height_map'][0][0]
+    """
     def __init__(self, config: GameConfig):
         self.config = config
         self.environment = Environment(config.CHUNK_SIZE)
