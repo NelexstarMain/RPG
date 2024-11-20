@@ -152,3 +152,5 @@ class Character:
         if self.exp >= max_level:
             self.exp -= max_level
             self.lvl += 1
+
+    

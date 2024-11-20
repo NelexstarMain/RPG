@@ -1,6 +1,9 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional, Tuple
 import uuid
+from data.plan.system import MedievalTaskManager
+from data.job import JOB_TO_HOUR
+
 
 """
 Human Simulation System
@@ -16,6 +19,19 @@ Przykład użycia:
     >>> human.intelligence = 0.8
     >>> human.job = "Nauczyciel"
 """
+
+
+@dataclass
+class HumanBody:
+    x: int = 0
+    y: int = 0
+    health: int = 100
+    status: dict = field(default_factory=dict)
+    inventory: List = field(default_factory=list)
+    alive: bool = True
+
+
+
 @dataclass
 class Human:
     """
@@ -40,14 +56,13 @@ class Human:
         honesty (float): Poziom uczciwości - wpływa na zaufanie innych
         adaptability (float): Poziom adaptacyjności - wpływa na radzenie sobie ze zmianami
     """
+    mtm: MedievalTaskManager = MedievalTaskManager()
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
     age: int = 10
     gender: str = "male"
     
     job: str = "worker"
-    inventory: List = field(default_factory=list)
-    
     intelligence: float = 0.0
     charisma: float = 0.0    
     empathy: float = 0.0       
@@ -58,6 +73,9 @@ class Human:
     patience: float = 0.0      
     honesty: float = 0.0        
     adaptability: float = 0.0
+    memory: List = field(default_factory=list)
+    future_plans: List = field(default_factory=list)
+    plan: str = ""
     
     def __hash__(self) -> int:
         return hash(self.id)
@@ -66,3 +84,33 @@ class Human:
         if not isinstance(other, Human):
             return NotImplemented
         return self.id == other.id
+
+    def _find_plan(self) -> List:
+        return self.mtm.create_daily_plan(self.job, JOB_TO_HOUR[self.job])
+    
+    def _set_plan(self) -> None:
+        self.plan = self.future_plans.pop(0)
+        
+    def plan_menagment(self) -> None:
+        if self.plan:
+            return
+        
+        self.future_plans.extend(self._find_plan())
+        
+        if self.plan:
+            return
+        
+        self._set_plan()
+        
+        
+    
+class HumanMenager:
+    def __init__(self):
+        self.body: HumanBody = HumanBody()
+        self.mind: Human = Human()
+        
+    def actions(self) -> Optional[Tuple[int, int, Optional[bool]]]
+        self.mind.plan_menagment()
+        action = self.mind.plan
+        
+    
